@@ -16,11 +16,27 @@
     - db_engine == 'mysql'
     - db_version is version('8.4', '>=')
 
-- name: Add MySQL 8.4 repository
-  ansible.builtin.apt_repository:
-    repo: deb http://repo.mysql.com/apt/ubuntu/ jammy mysql-8.4-lts mysql-tools
+# Necessary for deb822 to run; when earliest Ansible ver tested against is 2.20, this task can be removed
+# https://docs.ansible.com/projects/ansible/latest/collections/ansible/builtin/deb822_repository_module.html#parameter-install_python_debian
+- name: Install python3-debian for deb822_repository module
+  ansible.builtin.apt:
+    name: python3-debian
     state: present
-    filename: mysql
+  when:
+    - db_engine == 'mysql'
+    - db_version is version('8.4', '>=')
+
+- name: Add MySQL 8.4 repository
+  ansible.builtin.deb822_repository:
+    name: mysql
+    types: deb
+    uris: http://repo.mysql.com/apt/ubuntu
+    suites: jammy
+    components:
+      - mysql-8.4-lts
+      - mysql-tools
+    signed_by: /etc/apt/trusted.gpg.d/mysql.asc
+    state: present
   when:
     - db_engine == 'mysql'
     - db_version is version('8.4', '>=')
